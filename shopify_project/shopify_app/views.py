@@ -4,7 +4,6 @@ import shopify
 from django.shortcuts import redirect, HttpResponse
 from django.http import JsonResponse
 from django.conf import settings
-from urllib.parse import urlencode
 
 def shopify_login(request):
     print("------------------")
@@ -37,6 +36,7 @@ import hmac
 import hashlib
 from django.conf import settings
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
+import shopify
 
 def validate_hmac(params, secret):
     hmac_from_shopify = params.pop("hmac", [None])[0]
@@ -49,51 +49,30 @@ def validate_hmac(params, secret):
         hashlib.sha256,
     ).hexdigest()
     return hmac.compare_digest(computed_hmac, hmac_from_shopify)
-import hmac
-import hashlib
-from urllib.parse import urlencode
-
-from django.http import HttpResponseBadRequest
-
-def verify_hmac(request):
-    params = request.GET.dict()
-    received_hmac = params.pop('hmac', None)
-
-    sorted_params = sorted((k, v) for k, v in params.items())
-    message = urlencode(sorted_params)
-
-    computed_hmac = hmac.new(
-        key=bytes(os.getenv("SHOPIFY_API_SECRET"), 'utf-8'),
-        msg=bytes(message, 'utf-8'),
-        digestmod=hashlib.sha256
-    ).hexdigest()
-
-    return hmac.compare_digest(computed_hmac, received_hmac)
-import requests
-import os
 
 def shopify_callback(request):
-    if not verify_hmac(request):
-        return HttpResponseBadRequest("HMAC verification failed")
+    shopify.Session.setup(
+        api_key=settings.SHOPIFY_API_KEY,
+        secret=settings.SHOPIFY_API_SECRET,
+    )
 
-    shop = request.GET.get("shop")
-    code = request.GET.get("code")
+    shop_url = request.GET.get("shop")
+    if not shop_url:
+        return HttpResponseBadRequest("Missing shop parameter")
 
-    # Exchange temporary code for permanent access token
-    token_url = f"https://{shop}/admin/oauth/access_token"
-    data = {
-        "client_id": os.getenv("SHOPIFY_API_KEY"),
-        "client_secret": os.getenv("SHOPIFY_API_SECRET"),
-        "code": code
-    }
-    response = requests.post(token_url, json=data)
-    access_token = response.json().get("access_token")
+    # Copy QueryDict to a mutable dict
+    params = request.GET.copy()
 
-    # Store this token securely for future use
+    if not validate_hmac(params, settings.SHOPIFY_API_SECRET):
+        return HttpResponseBadRequest("❌ Invalid HMAC: Possibly malicious login")
 
-    return redirect("/")  # or dashboard
+    session = shopify.Session(shop_url, version="2025-04")
+    token = session.request_token(request.GET.dict())
 
+    request.session["access_token"] = token
+    request.session["shop"] = shop_url
 
+    return HttpResponseRedirect("/shopify/orders/")
 
 
 

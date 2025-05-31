@@ -122,11 +122,3 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-SHOPIFY_API_VERSION = '2025-04'  # Or the latest stable version
-
-# SHOPIFY_API_KEY = '9db83d736ee51ddc56f3907c91a75393'
-# SHOPIFY_API_SECRET = 'bc6b4a3d7aa27d0716588a5beb12fa16'
-
-SHOPIFY_API_KEY="c2fbe8f4c5a320f99511fa02d971b4b4"
-SHOPIFY_API_SECRET="e4aa77fb4ea79f10eae8831ae7ed9f7f    "
-SHOPIFY_REDIRECT_URI = 'https://a911-2409-40e3-35-e598-f459-fad1-3991-6fd2.ngrok-free.app/shopify/callback/'  # ngrok URL
