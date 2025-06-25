@@ -1,0 +1,24 @@
+psql -h 127.0.0.1 -p 5434 -U postgres
+docker run -d \
+  --name pg14 \
+  -e POSTGRES_PASSWORD=mysecretpassword \
+  -v ~/pg14dockerdata:/var/lib/postgresql/data \
+  -p 5433:5432 \
+  postgres:14
+
+docker run --name pg14   -e POSTGRES_USER=myuser   -e POSTGRES_PASSWORD=mypassword   -e POSTGRES_DB=mydb   -p 5434:5432   -v $HOME/pg14data:/var/lib/postgresql/data   -d postgres:14
+
+pg_restore -h 127.0.0.1 -p 5434 -U postgres -d "database_name" -v ~/backup_database
+
+ALTER DATABASE "batabase_name" OWNER TO "to_batabase";
+
+
+
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+        EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' OWNER TO "batabase_name"';
+    END LOOP;
+END $$;
